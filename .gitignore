@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+*.sqlite3
+*.db
+*.env
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Django
+*.pot
+*.pyc
+*.mo
+staticfiles/
+media/
+db.sqlite3
+*.sqlite3
+
+# VSCode
+.vscode/
+
+# MacOS
+.DS_Store
+
+# PyCharm
+.idea/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# mypy
+.mypy_cache/
+
+# Pytest
+.pytest_cache/
+
+# Django migrations
+**/migrations/
+!**/migrations/__init__.py
+
+# Celery
+celerybeat-schedule
+
+# Logs
+*.log
+
+# Env files
+.env
+.env.example
+
+# Node (если есть фронтенд)
+node_modules/
