@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'corsheaders',
+    'django_resized',
+    'django_celery_beat',
 ]
 
 # ---------------------------------------------
@@ -68,12 +70,27 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # ---------------------------------------------
 # Database
 # ---------------------------------------------
-DATABASES = {
-    'default': {
-        'ENGINE': config("DB_ENGINE", default="django.db.backends.sqlite3"),
-        'NAME': BASE_DIR / config("DB_NAME", default="db.sqlite3"),
+USE_POSTGRES = config("USE_POSTGRES", cast=bool, default=False)
+RUNNING_IN_DOCKER = config("RUNNING_IN_DOCKER", cast=bool, default=False)
+
+if USE_POSTGRES:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("POSTGRES_DB"),
+            "USER": config("POSTGRES_USER"),
+            "PASSWORD": config("POSTGRES_PASSWORD"),
+            "HOST": config("POSTGRES_HOST", default="db"),  # контейнер PostgreSQL
+            "PORT": config("POSTGRES_PORT", default="5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / config("SQLITE_DB_NAME", default="db.sqlite3"),
+        }
+    }
 
 # ---------------------------------------------
 # Auth
@@ -130,7 +147,7 @@ SIMPLE_JWT = {
 }
 
 # ---------------------------------------------
-# Email (Gmail SMTP)
+# Email (SMTP)
 # ---------------------------------------------
 EMAIL_BACKEND = config("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
@@ -150,3 +167,17 @@ CORS_ALLOWED_ORIGINS = config(
 )
 CORS_ALLOWED_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+
+# ---------------------------------------------
+# CELERY
+# ---------------------------------------------
+REDIS_HOST = config("REDIS_HOST", default="redis")  # контейнер Redis
+CELERY_BROKER_URL = f"redis://{REDIS_HOST}:6379/0"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:6379/1"
+
+CELERY_BEAT_SCHEDULE = {
+    "deactivate_inactive_sellers": {
+        "task": "accounts.tasks.deactivate_inactive_sellers",
+        "schedule": 60 * 60 * 24,  # каждый день
+    },
+}

@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
 from django.utils.timezone import now
+from django_resized import ResizedImageField
+from .managers import UserManager
 
 class User(AbstractUser):
     class Meta:
@@ -22,6 +24,18 @@ class User(AbstractUser):
     phone_number = PhoneNumberField("Номер телефона", null=True, blank=True)
     role = models.CharField("Роль пользователя", choices=ROLE_CHOICES, default="user")
     created_at = models.DateTimeField(auto_now_add=True)
+    avatar = ResizedImageField(
+        verbose_name="Аватар",
+        upload_to="avatars/",
+        size=[300, 300],
+        crop=["middle", "center"],
+        quality=85,
+        force_format="WEBP",
+        null=True,
+        blank=True,
+    )
+
+    objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

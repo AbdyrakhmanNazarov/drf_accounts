@@ -1,0 +1,118 @@
+version: '3.9'
+
+services:
+  # -------------------------------
+  # Django приложение (Gunicorn)
+  # -------------------------------
+  web:
+    build: .
+    container_name: django_web
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --workers 4 --log-level info --access-logfile - --error-logfile -
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    networks:
+      - app
+    restart: always
+
+  # -------------------------------
+  # Celery worker
+  # -------------------------------
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    command: celery -A core worker -l info
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - app
+    restart: always
+
+  # -------------------------------
+  # Celery beat
+  # -------------------------------
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+      - web
+    networks:
+      - app
+    restart: always
+
+  # -------------------------------
+  # Redis (для Celery)
+  # -------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    networks:
+      - app
+    restart: always
+
+  # -------------------------------
+  # PostgreSQL
+  # -------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app
+    restart: always
+
+  # -------------------------------
+  # Nginx (статика + медиа)
+  # -------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"   # наружный порт для сайта
+    volumes:
+      - static_volume:/app/static
+      - media_volume:/app/media
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - web
+    networks:
+      - app
+    restart: always
+
+# -------------------------------
+# Сети
+# -------------------------------
+networks:
+  app:
+
+# -------------------------------
+# Томa
+# -------------------------------
+volumes:
+  static_volume:
+  media_volume:
+  pgdata:
